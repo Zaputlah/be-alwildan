@@ -1,0 +1,1 @@
+ALTER TYPE "AssessmentType" ADD VALUE 'PROJECT';

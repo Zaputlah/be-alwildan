@@ -14,11 +14,15 @@ import { studentReportRouter } from './modules/reports/student-report.routes.js'
 import { teacherScheduleRouter } from './modules/teacher-schedule/teacher-schedule.routes.js';
 import { studentAttendanceRouter } from './modules/student-attendance/student-attendance.routes.js';
 import { studentBehaviorRouter } from './modules/student-behavior/student-behavior.routes.js';
+// Keep the middleware call compatible with Vercel's Node/TypeScript module resolver.
+// Helmet ships both CJS and ESM declarations, and some Vercel builders infer the
+// default import as a module namespace even though it is the callable factory.
+const helmetFactory = helmet;
 export function createApp() {
     const app = express();
     app.disable('x-powered-by');
     app.set('trust proxy', 1);
-    app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
+    app.use(helmetFactory({ crossOriginResourcePolicy: { policy: 'same-site' } }));
     app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }));
     app.use(express.json({ limit: '200kb' }));
     app.use(cookieParser());

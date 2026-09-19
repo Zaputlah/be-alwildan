@@ -8,8 +8,11 @@ import { env } from '../../config/env.js';
 import { prisma } from '../../config/prisma.js';
 import { authenticate, requireCsrf, SESSION_COOKIE } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
+// Vercel's TypeScript resolver can expose express-rate-limit's ESM namespace
+// type for the default import; at runtime it is still the callable factory.
+const rateLimitFactory = rateLimit;
 export const authRouter = Router();
-const loginLimiter = rateLimit({
+const loginLimiter = rateLimitFactory({
     windowMs: 15 * 60 * 1000,
     limit: 10,
     standardHeaders: 'draft-8',

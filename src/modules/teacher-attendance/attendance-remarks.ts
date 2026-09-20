@@ -2,7 +2,7 @@ import { minutesFromClock, schoolMinutes } from './attendance-time.js';
 
 type AttendanceForRemarks = {
   status: 'PRESENT' | 'LATE' | 'SICK' | 'LEAVE' | 'DUTY' | 'ABSENT';
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+  approvalStatus?: 'PENDING' | 'PENDING_BRANCH' | 'PENDING_CENTRAL' | 'APPROVED' | 'REJECTED' | null;
   checkInAt: Date | null;
   checkOutAt: Date | null;
   notes: string | null;
@@ -16,6 +16,8 @@ export function attendanceRemarks(
 ): string[] {
   const remarks: string[] = [];
   if (record.approvalStatus === 'PENDING') remarks.push('Pengajuan menunggu persetujuan Admin.');
+  if (record.approvalStatus === 'PENDING_BRANCH') remarks.push('Pengajuan menunggu persetujuan Admin Cabang.');
+  if (record.approvalStatus === 'PENDING_CENTRAL') remarks.push('Pengajuan disetujui cabang dan menunggu persetujuan Admin Pusat.');
   if (record.approvalStatus === 'REJECTED') remarks.push('Pengajuan ditolak Admin.');
   const clock = (value: Date) => new Intl.DateTimeFormat('en-GB', {
     timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',

@@ -15,6 +15,9 @@ import { studentReportRouter } from './modules/reports/student-report.routes.js'
 import { teacherScheduleRouter } from './modules/teacher-schedule/teacher-schedule.routes.js';
 import { studentAttendanceRouter } from './modules/student-attendance/student-attendance.routes.js';
 import { studentBehaviorRouter } from './modules/student-behavior/student-behavior.routes.js';
+import { teacherCaseRouter } from './modules/teacher-cases/teacher-case.routes.js';
+import { teacherAccessRouter } from './modules/teacher-access/teacher-access.routes.js';
+import { adminAccountRouter } from './modules/admin-accounts/admin-account.routes.js';
 
 // Keep the middleware call compatible with Vercel's Node/TypeScript module resolver.
 // Helmet ships both CJS and ESM declarations, and some Vercel builders infer the
@@ -41,6 +44,9 @@ export function createApp() {
   app.use('/api/v1/teacher-schedule', teacherScheduleRouter);
   app.use('/api/v1/student-attendance', studentAttendanceRouter);
   app.use('/api/v1/student-behavior', studentBehaviorRouter);
+  app.use('/api/v1/teacher-cases', teacherCaseRouter);
+  app.use('/api/v1/teacher-access', teacherAccessRouter);
+  app.use('/api/v1/admin-accounts', adminAccountRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

@@ -35,7 +35,7 @@ authRouter.post('/login', loginLimiter, validate(loginSchema), async (req, res) 
     include: { schoolUnit: true },
   });
   const valid = user ? await verifyPassword(req.body.password, user.passwordHash) : false;
-  if (!user || !valid || !user.isActive) {
+  if (!user || !valid || !user.isActive || (user.role === 'TEACHER' && user.accessStatus !== 'APPROVED')) {
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email atau kata sandi salah.');
   }
 
@@ -73,6 +73,7 @@ authRouter.get('/me', authenticate, async (req, res) => {
       email: req.auth!.email,
       fullName: req.auth!.fullName,
       role: req.auth!.role,
+      adminScope: req.auth!.adminScope,
       schoolUnit: { id: req.auth!.schoolUnitId, name: req.auth!.schoolUnitName },
     },
     csrfToken,

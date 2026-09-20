@@ -18,6 +18,7 @@ export const authenticate = async (req, _res, next) => {
         fullName: session.user.fullName,
         email: session.user.email,
         role: session.user.role,
+        adminScope: session.user.adminScope,
         schoolUnitId: session.user.schoolUnitId,
         schoolUnitName: session.user.schoolUnit.name,
         sessionId: session.id,

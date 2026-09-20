@@ -13,6 +13,30 @@ enum UserRole {
   TEACHER
 }
 
+enum AdminScope {
+  BRANCH
+  CENTRAL
+}
+
+enum TeacherAccessStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum TeacherCaseLevel {
+  WARNING
+  SP1
+  SP2
+  SP3
+}
+
+enum TeacherCaseStatus {
+  OPEN
+  RESOLVED
+  TERMINATED
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -61,7 +85,8 @@ enum StudentBehaviorRating {
 }
 
 enum AttendanceApprovalStatus {
-  PENDING
+  PENDING_BRANCH
+  PENDING_CENTRAL
   APPROVED
   REJECTED
 }
@@ -82,6 +107,7 @@ model SchoolUnit {
   studentBehavior StudentBehavior[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  teacherCases    TeacherCase[]
 }
 
 model User {
@@ -90,7 +116,13 @@ model User {
   passwordHash      String
   fullName          String
   role              UserRole
+  adminScope        AdminScope         @default(BRANCH)
   isActive          Boolean              @default(true)
+  accessStatus      TeacherAccessStatus  @default(APPROVED)
+  accessRequestedById String?
+  accessReviewedById  String?
+  accessReviewedAt    DateTime?
+  accessRejectionReason String?
   schoolUnitId      String
   schoolUnit        SchoolUnit           @relation(fields: [schoolUnitId], references: [id])
   sessions          Session[]
@@ -102,6 +134,8 @@ model User {
   reviewedAttendance TeacherAttendance[] @relation("AttendanceReviewer")
   recordedStudentAttendance StudentAttendance[]
   recordedStudentBehavior StudentBehavior[]
+  teacherCases       TeacherCase[]        @relation("CaseTeacher")
+  recordedCases      TeacherCase[]        @relation("CaseRecorder")
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -161,6 +195,26 @@ model SchoolClass {
 
   @@unique([schoolUnitId, academicYear, name])
   @@index([schoolUnitId])
+}
+
+model TeacherCase {
+  id          String            @id @default(cuid())
+  teacherId   String
+  schoolUnitId String
+  level       TeacherCaseLevel
+  status      TeacherCaseStatus @default(OPEN)
+  title       String
+  description String
+  decision    String?
+  teacher     User              @relation("CaseTeacher", fields: [teacherId], references: [id])
+  recordedBy  User              @relation("CaseRecorder", fields: [recordedById], references: [id])
+  recordedById String
+  schoolUnit  SchoolUnit        @relation(fields: [schoolUnitId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([schoolUnitId, createdAt])
+  @@index([teacherId, createdAt])
 }
 
 model Student {
@@ -360,6 +414,12 @@ model TeacherAttendance {
   reviewedAt   DateTime?
   reviewedById String?
   reviewNotes  String?
+  branchReviewedAt DateTime?
+  branchReviewedById String?
+  branchReviewNotes String?
+  centralReviewedAt DateTime?
+  centralReviewedById String?
+  centralReviewNotes String?
   notes        String?
   teacherId    String
   schoolUnitId String

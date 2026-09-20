@@ -52,14 +52,15 @@ teacherAttendanceRouter.get('/', async (req, res) => {
   const [year, monthNumber] = month.split('-').map(Number);
   const start = new Date(Date.UTC(year, monthNumber - 1, 1));
   const end = new Date(Date.UTC(year, monthNumber, 1));
+  const isCentralAdmin = req.auth!.role === 'ADMIN' && req.auth!.adminScope === 'CENTRAL';
   const teacherId = req.auth!.role === 'TEACHER' ? req.auth!.userId : parsed.data.teacherId;
   if (teacherId) {
-    const teacher = await prisma.user.findFirst({ where: { id: teacherId, schoolUnitId: req.auth!.schoolUnitId, role: 'TEACHER' } });
+    const teacher = await prisma.user.findFirst({ where: { id: teacherId, ...(isCentralAdmin ? {} : { schoolUnitId: req.auth!.schoolUnitId }), role: 'TEACHER' } });
     if (!teacher) throw new HttpError(400, 'INVALID_TEACHER', 'Guru tidak tersedia pada unit sekolah Anda.');
   }
   const records = await prisma.teacherAttendance.findMany({
     where: {
-      schoolUnitId: req.auth!.schoolUnitId,
+      ...(isCentralAdmin ? {} : { schoolUnitId: req.auth!.schoolUnitId }),
       date: { gte: start, lt: end },
       ...(teacherId ? { teacherId } : {}),
     },
@@ -87,7 +88,7 @@ teacherAttendanceRouter.get('/', async (req, res) => {
     })),
     summary: {
       ...counts,
-      pending: records.filter((record) => record.approvalStatus === 'PENDING').length,
+      pending: records.filter((record) => record.approvalStatus === 'PENDING_BRANCH' || record.approvalStatus === 'PENDING_CENTRAL').length,
       rejected: records.filter((record) => record.approvalStatus === 'REJECTED').length,
       earlyCheckout: records.filter((record) => record.isEarlyCheckout).length,
       total: records.length,
@@ -182,8 +183,10 @@ teacherAttendanceRouter.post('/requests', authorize('TEACHER'), requireCsrf, upl
       await tx.teacherAttendance.update({
         where: { id: existing.id },
         data: {
-          status: parsed.data.status, notes: parsed.data.notes, approvalStatus: 'PENDING',
+          status: parsed.data.status, notes: parsed.data.notes, approvalStatus: 'PENDING_BRANCH',
           reviewedAt: null, reviewedById: null, reviewNotes: null,
+          branchReviewedAt: null, branchReviewedById: null, branchReviewNotes: null,
+          centralReviewedAt: null, centralReviewedById: null, centralReviewNotes: null,
           evidence: { upsert: { create: evidence, update: { ...evidence, uploadedAt: new Date() } } },
         },
       });
@@ -194,7 +197,7 @@ teacherAttendanceRouter.post('/requests', authorize('TEACHER'), requireCsrf, upl
     }
     return tx.teacherAttendance.create({
       data: {
-        date, status: parsed.data.status, notes: parsed.data.notes, approvalStatus: 'PENDING',
+        date, status: parsed.data.status, notes: parsed.data.notes, approvalStatus: 'PENDING_BRANCH',
         teacherId: req.auth!.userId, schoolUnitId: req.auth!.schoolUnitId,
         evidence: { create: evidence },
       },
@@ -214,15 +217,21 @@ const reviewSchema = z.object({
 
 teacherAttendanceRouter.patch('/requests/:id/review', authorize('ADMIN'), requireCsrf, validate(reviewSchema), async (req, res) => {
   const { decision, notes } = req.body as z.infer<typeof reviewSchema>;
+  const isCentralAdmin = req.auth!.adminScope === 'CENTRAL';
+  const pendingStatus = isCentralAdmin ? 'PENDING_CENTRAL' : 'PENDING_BRANCH';
+  const nextStatus = decision === 'REJECTED' ? 'REJECTED' : isCentralAdmin ? 'APPROVED' : 'PENDING_CENTRAL';
   const record = await prisma.teacherAttendance.findFirst({
-    where: { id: String(req.params.id), schoolUnitId: req.auth!.schoolUnitId, approvalStatus: 'PENDING' },
+    where: { id: String(req.params.id), ...(isCentralAdmin ? {} : { schoolUnitId: req.auth!.schoolUnitId }), approvalStatus: pendingStatus },
   });
   if (!record) throw new HttpError(404, 'REQUEST_NOT_PENDING', 'Pengajuan tidak ditemukan atau sudah diproses.');
   const updated = await prisma.teacherAttendance.updateMany({
-    where: { id: record.id, schoolUnitId: req.auth!.schoolUnitId, approvalStatus: 'PENDING' },
+    where: { id: record.id, ...(isCentralAdmin ? {} : { schoolUnitId: req.auth!.schoolUnitId }), approvalStatus: pendingStatus },
     data: {
-      approvalStatus: decision, reviewedAt: new Date(), reviewedById: req.auth!.userId,
+      approvalStatus: nextStatus, reviewedAt: new Date(), reviewedById: req.auth!.userId,
       reviewNotes: notes || null,
+      ...(isCentralAdmin
+        ? { centralReviewedAt: new Date(), centralReviewedById: req.auth!.userId, centralReviewNotes: notes || null }
+        : { branchReviewedAt: new Date(), branchReviewedById: req.auth!.userId, branchReviewNotes: notes || null }),
     },
   });
   if (!updated.count) throw new HttpError(409, 'REQUEST_ALREADY_REVIEWED', 'Pengajuan sudah diproses oleh Admin lain.');
@@ -236,10 +245,11 @@ teacherAttendanceRouter.patch('/requests/:id/review', authorize('ADMIN'), requir
 });
 
 teacherAttendanceRouter.get('/records/:id/evidence', async (req, res) => {
+  const isCentralAdmin = req.auth!.role === 'ADMIN' && req.auth!.adminScope === 'CENTRAL';
   const record = await prisma.teacherAttendance.findFirst({
     where: {
       id: String(req.params.id),
-      schoolUnitId: req.auth!.schoolUnitId,
+      ...(isCentralAdmin ? {} : { schoolUnitId: req.auth!.schoolUnitId }),
       ...(req.auth!.role === 'TEACHER' ? { teacherId: req.auth!.userId } : {}),
     },
     include: { evidence: true },

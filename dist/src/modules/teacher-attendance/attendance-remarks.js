@@ -3,6 +3,10 @@ export function attendanceRemarks(record, timeZone, lateAfter, earlyCheckoutBefo
     const remarks = [];
     if (record.approvalStatus === 'PENDING')
         remarks.push('Pengajuan menunggu persetujuan Admin.');
+    if (record.approvalStatus === 'PENDING_BRANCH')
+        remarks.push('Pengajuan menunggu persetujuan Admin Cabang.');
+    if (record.approvalStatus === 'PENDING_CENTRAL')
+        remarks.push('Pengajuan disetujui cabang dan menunggu persetujuan Admin Pusat.');
     if (record.approvalStatus === 'REJECTED')
         remarks.push('Pengajuan ditolak Admin.');
     const clock = (value) => new Intl.DateTimeFormat('en-GB', {

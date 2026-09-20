@@ -5,6 +5,7 @@ import { HttpError } from '../../common/http-error.js';
 import { prisma } from '../../config/prisma.js';
 import { authenticate, requireCsrf } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
+import { assessmentWeight } from './assessment-weight.js';
 
 export const assessmentRouter = Router();
 assessmentRouter.use(authenticate);
@@ -24,7 +25,7 @@ async function canManage(userId: string, role: string, schoolUnitId: string, cla
   const schoolClass = await prisma.schoolClass.findFirst({ where: { id: classId, schoolUnitId } });
   const period = await prisma.academicPeriod.findFirst({ where: { id: academicPeriodId, schoolUnitId } });
   if (!schoolClass || !period || schoolClass.academicYear !== period.name) return false;
-  if (role === 'ADMIN') return true;
+  if (role !== 'TEACHER') return false;
   return Boolean(await prisma.teachingAssignment.findUnique({
     where: { teacherId_classId_subjectId_academicPeriodId: { teacherId: userId, classId, subjectId, academicPeriodId } },
   }));
@@ -73,6 +74,7 @@ assessmentRouter.post('/', requireCsrf, validate(assessmentSchema), async (req, 
   const assessment = await prisma.assessment.create({
     data: {
       ...data,
+      weight: assessmentWeight(data.type),
       scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
       teacherId: req.auth!.userId,
     },

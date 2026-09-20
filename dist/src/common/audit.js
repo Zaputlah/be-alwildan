@@ -19,5 +19,6 @@ export const publicUser = (user) => ({
     email: user.email,
     fullName: user.fullName,
     role: user.role,
+    adminScope: user.adminScope,
     schoolUnit: user.schoolUnit,
 });

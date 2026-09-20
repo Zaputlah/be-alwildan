@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, SemesterType, UserRole } from "@prisma/client";
+import { AdminScope, PrismaClient, SemesterType, UserRole } from "@prisma/client";
 import { hashPassword } from "../src/common/crypto.js";
 
 const prisma = new PrismaClient();
@@ -35,6 +35,12 @@ async function main() {
       role: UserRole.ADMIN,
     },
     {
+      email: "admin.pusat@integration.sch.id",
+      fullName: "Administrator Pusat",
+      role: UserRole.ADMIN,
+      adminScope: AdminScope.CENTRAL,
+    },
+    {
       email: "guru@integration.sch.id",
       fullName: "Ahmad Fauzan, S.Pd.",
       role: UserRole.TEACHER,
@@ -54,6 +60,11 @@ async function main() {
       fullName: "Nur Aisyah, S.Pd.I.",
       role: UserRole.TEACHER,
     },
+    {
+      email: "guru.ips.7b@integration.sch.id",
+      fullName: "Rina Puspita, S.Pd.",
+      role: UserRole.TEACHER,
+    },
   ];
 
   for (const user of users) {
@@ -62,6 +73,7 @@ async function main() {
       update: {
         fullName: user.fullName,
         role: user.role,
+        adminScope: user.adminScope ?? AdminScope.BRANCH,
         isActive: true,
         schoolUnitId: schoolUnit.id,
       },
@@ -70,6 +82,7 @@ async function main() {
         passwordHash,
         fullName: user.fullName,
         role: user.role,
+        adminScope: user.adminScope ?? AdminScope.BRANCH,
         isActive: true,
         schoolUnitId: schoolUnit.id,
       },

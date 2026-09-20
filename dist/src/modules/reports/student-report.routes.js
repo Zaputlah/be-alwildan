@@ -4,6 +4,7 @@ import { HttpError } from '../../common/http-error.js';
 import { prisma } from '../../config/prisma.js';
 import { authenticate } from '../../middleware/auth.js';
 import { averagePercentages, weightedPercentage } from './grade-summary.js';
+import { scoreGrade } from './score-grade.js';
 export const studentReportRouter = Router();
 studentReportRouter.use(authenticate);
 const selectionSchema = z.object({
@@ -79,6 +80,10 @@ studentReportRouter.get('/students/:studentId', async (req, res) => {
         },
         orderBy: [{ subject: { name: 'asc' } }, { createdAt: 'asc' }],
     });
+    const attendanceRecords = await prisma.studentAttendance.findMany({
+        where: { studentId: student.id, classId, academicPeriodId },
+        select: { status: true },
+    });
     const subjects = new Map();
     for (const assessment of assessments) {
         if (!subjects.has(assessment.subjectId)) {
@@ -105,13 +110,30 @@ studentReportRouter.get('/students/:studentId', async (req, res) => {
     }
     const rows = Array.from(subjects.values()).map((subject) => {
         const average = weightedPercentage(subject.assessments.map((item) => ({ value: item.score, maxScore: item.maxScore, weight: item.weight })));
-        return { ...subject, average, meetsKkm: average === null ? null : average >= subject.passingGrade };
+        return { ...subject, average, grade: scoreGrade(average), meetsKkm: average === null ? null : average >= subject.passingGrade };
     });
+    const academicAverage = averagePercentages(rows.map((subject) => subject.average));
+    const attendanceTotal = attendanceRecords.length;
+    const attendanceAttended = attendanceRecords.filter((item) => item.status === 'PRESENT' || item.status === 'LATE').length;
+    const attendancePercentage = attendanceTotal
+        ? Math.round(attendanceAttended / attendanceTotal * 1000) / 10
+        : null;
+    const finalAverage = academicAverage === null || attendancePercentage === null
+        ? academicAverage
+        : Math.round((academicAverage * 0.75 + attendancePercentage * 0.25) * 10) / 10;
     res.json({
         student,
         schoolClass: { id: scope.schoolClass.id, name: scope.schoolClass.name },
         academicPeriod: scope.period,
         subjects: rows,
-        overallAverage: averagePercentages(rows.map((subject) => subject.average)),
+        overallAverage: finalAverage,
+        overallGrade: scoreGrade(finalAverage),
+        academicAverage,
+        attendance: {
+            weight: 25,
+            totalRecords: attendanceTotal,
+            attended: attendanceAttended,
+            percentage: attendancePercentage,
+        },
     });
 });

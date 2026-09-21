@@ -1,0 +1,37 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 336 >>
+stream
+BT
+/F1 18 Tf
+72 720 Td
+(SURAT KETERANGAN SAKIT - TEMPLATE DEMO) Tj
+/F1 12 Tf
+0 -42 Td
+(Nama guru: ________________________________) Tj
+0 -24 Td
+(Tanggal: __________________________________) Tj
+0 -24 Td
+(Keterangan: Memerlukan istirahat karena sakit.) Tj
+0 -48 Td
+(Dokumen ini hanya untuk pengujian aplikasi.) Tj
+0 -24 Td
+(Bukan surat resmi dan tidak berlaku sebagai dokumen medis.) Tj
+ET
+endstream
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF

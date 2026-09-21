@@ -8,6 +8,11 @@ function date(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
+function sickDemoPdf() {
+  const body = 'BT /F1 16 Tf 72 720 Td (SURAT KETERANGAN SAKIT - TEMPLATE DEMO) Tj /F1 11 Tf 0 -36 Td (Nama guru: ____________________) Tj 0 -24 Td (Tanggal: _____________________) Tj 0 -36 Td (Dokumen pengujian aplikasi - bukan surat resmi.) Tj ET';
+  return Buffer.from(`%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n5 0 obj << /Length ${Buffer.byteLength(body, 'ascii')} >> stream\n${body}\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n`, 'ascii');
+}
+
 async function main() {
   console.log("Mulai seed data lengkap...");
 
@@ -875,16 +880,21 @@ async function main() {
     const evidence = await prisma.teacherAttendanceEvidence.findFirst({
       where: { attendanceId: sickAttendance.id },
     });
-    if (!evidence) {
-      const content = Buffer.from(
-        "DATA DEMO - BUKAN DOKUMEN RESMI\nBukti sakit untuk pengujian aplikasi.",
-        "utf8",
-      );
-      await prisma.teacherAttendanceEvidence.create({
-        data: {
+    if (!evidence || evidence.mimeType !== "application/pdf") {
+      const content = sickDemoPdf();
+      await prisma.teacherAttendanceEvidence.upsert({
+        where: { attendanceId: sickAttendance.id },
+        update: {
+          fileName: "template-surat-sakit-demo.pdf",
+          mimeType: "application/pdf",
+          size: content.length,
+          content,
+          uploadedAt: new Date(),
+        },
+        create: {
           attendanceId: sickAttendance.id,
-          fileName: "bukti-sakit-demo.txt",
-          mimeType: "text/plain",
+          fileName: "template-surat-sakit-demo.pdf",
+          mimeType: "application/pdf",
           size: content.length,
           content,
         },

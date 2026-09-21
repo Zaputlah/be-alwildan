@@ -21,8 +21,11 @@ export const uploadEvidence = multer({
   },
 }).single('evidence');
 
-export function evidenceData(file: Express.Multer.File | undefined) {
+export function evidenceData(file: Express.Multer.File | undefined, status?: 'SICK' | 'LEAVE' | 'DUTY') {
   if (!file) throw new HttpError(400, 'EVIDENCE_REQUIRED', 'Bukti sakit, izin, atau tugas wajib dilampirkan.');
+  if (status === 'SICK' && file.mimetype !== 'application/pdf') {
+    throw new HttpError(400, 'INVALID_SICK_EVIDENCE_TYPE', 'Bukti surat sakit wajib berupa file PDF.');
+  }
   const { buffer } = file;
   const valid = file.mimetype === 'application/pdf'
     ? buffer.subarray(0, 5).toString('ascii') === '%PDF-'

@@ -170,7 +170,7 @@ const teacherRequestSchema = z.object({
 teacherAttendanceRouter.post('/requests', authorize('TEACHER'), requireCsrf, uploadEvidence, async (req, res) => {
   const parsed = teacherRequestSchema.safeParse(req.body);
   if (!parsed.success) throw new HttpError(400, 'VALIDATION_ERROR', 'Data sakit/izin/tugas tidak valid.', parsed.error.flatten());
-  const evidence = evidenceData(req.file);
+  const evidence = evidenceData(req.file, parsed.data.status);
   const date = dateOnly(parsed.data.date);
   const existing = await prisma.teacherAttendance.findUnique({
     where: { teacherId_date: { teacherId: req.auth!.userId, date } },
@@ -293,7 +293,9 @@ teacherAttendanceRouter.put('/records', authorize('ADMIN'), requireCsrf, uploadE
   if (needsEvidence && !req.file && (!existing?.evidence || existing.status !== values.status)) {
     throw new HttpError(400, 'EVIDENCE_REQUIRED', 'Bukti sesuai status sakit, izin, atau tugas wajib dilampirkan.');
   }
-  const evidence = req.file ? evidenceData(req.file) : null;
+  const evidence = req.file
+    ? evidenceData(req.file, needsEvidence ? values.status as 'SICK' | 'LEAVE' | 'DUTY' : undefined)
+    : null;
   const checkOutAt = !needsEvidence && values.checkOutAt ? new Date(values.checkOutAt) : null;
   const data = {
     status: values.status,

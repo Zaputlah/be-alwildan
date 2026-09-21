@@ -104,6 +104,9 @@ async function main() {
   const paiTeacher = await prisma.user.findUniqueOrThrow({
     where: { email: "guru.pai.test@integration.sch.id" },
   });
+  const ipsTeacher = await prisma.user.findUniqueOrThrow({
+    where: { email: "guru.ips.7b@integration.sch.id" },
+  });
 
   await prisma.session.upsert({
     where: { tokenHash: "seed-expired-session-token" },
@@ -257,6 +260,12 @@ async function main() {
       id: "seed-subject-bin",
       code: "BIN",
       name: "Bahasa Indonesia",
+      passingGrade: 75,
+    },
+    {
+      id: "seed-subject-ips",
+      code: "IPS",
+      name: "Ilmu Pengetahuan Sosial",
       passingGrade: 75,
     },
   ];
@@ -476,6 +485,10 @@ async function main() {
     [paiTeacher.id, "7C", "PAI"],
     [paiTeacher.id, "8A", "PAI"],
     [ipaTeacher.id, "8A", "IPA"],
+    [ipsTeacher.id, "7A", "IPS"],
+    [ipsTeacher.id, "7B", "IPS"],
+    [ipsTeacher.id, "7C", "IPS"],
+    [ipsTeacher.id, "8A", "IPS"],
   ] as const;
 
   for (const period of [ganjil, genap]) {
@@ -530,6 +543,10 @@ async function main() {
       "Ruang 7C",
     ],
     ["guru.pai.test@integration.sch.id", "8A", "PAI", 5, 480, 540, "Ruang 8A"],
+    ["guru.ips.7b@integration.sch.id", "7A", "IPS", 1, 660, 720, "Ruang 7A"],
+    ["guru.ips.7b@integration.sch.id", "7B", "IPS", 2, 480, 540, "Ruang 7B"],
+    ["guru.ips.7b@integration.sch.id", "7C", "IPS", 3, 660, 720, "Ruang 7C"],
+    ["guru.ips.7b@integration.sch.id", "8A", "IPS", 5, 600, 660, "Ruang 8A"],
   ] as const;
 
   for (const [
